@@ -16,7 +16,7 @@ import AuthModal from "./components/AuthModal";
 import ProfileModal, { getInitialAvatar } from "./components/ProfileModal";
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import SupabaseDashboardModal from "./components/SupabaseDashboardModal";
-import apexLogo from './assets/images/apex_logo_4k_bright_1783107217395.jpg';
+import apexLogo from './assets/images/apex_logo_bright_1783107410944.jpg';
 import HelpGuideModal from "./components/HelpGuideModal";
 import { 
   Search, BookOpen, Upload, Library, Globe, Sparkles, Download, 
