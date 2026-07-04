@@ -16,6 +16,7 @@ import AuthModal from "./components/AuthModal";
 import ProfileModal, { getInitialAvatar } from "./components/ProfileModal";
 import ResetPasswordModal from "./components/ResetPasswordModal";
 import SupabaseDashboardModal from "./components/SupabaseDashboardModal";
+import apexLogo from './assets/images/apex_logo_4k_bright_1783107217395.jpg';
 import HelpGuideModal from "./components/HelpGuideModal";
 import { 
   Search, BookOpen, Upload, Library, Globe, Sparkles, Download, 
@@ -882,7 +883,7 @@ export default function App() {
         <div className="flex items-center gap-3.5 group cursor-pointer" onClick={() => setActiveTab("explore")}>
           <div className="w-12 h-12 rounded-xl border border-blue-500/30 overflow-hidden relative shadow-[0_0_15px_rgba(59,130,246,0.2)] flex items-center justify-center bg-slate-950 shrink-0">
             <img 
-              src="/src/images/apex_logo_4k_bright_1783107552408.jpg" 
+              src={apexLogo} 
               alt="APEX Mountain Logo" 
               className="absolute inset-0 w-full h-full object-cover object-top scale-100 group-hover:scale-110 transition-transform duration-500"
               referrerPolicy="no-referrer"
