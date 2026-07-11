@@ -203,130 +203,132 @@ export default function App() {
   }, []);
 
   // Sync Supabase authentication state changes and loads active user profile
+// Sync Supabase authentication state changes and loads active user profile
   useEffect(() => {
-    if (isSupabaseActive) {
-      const syncUser = async (supabaseUser: any) => {
-        if (supabaseUser) {
-          const providerConnection = supabaseUser.app_metadata?.provider || "email";
-          const localUser: User = {
-            id: supabaseUser.id,
-            email: supabaseUser.email || "",
-            name: supabaseUser.user_metadata?.full_name || supabaseUser.email?.split("@")[0] || "Scholar User",
-            provider: providerConnection,
-            avatarUrl: supabaseUser.user_metadata?.avatar_url || getInitialAvatar(supabaseUser.email || ""),
-          };
+    // 1. Move the function OUTSIDE the conditional check so it can always be used
+    const syncUser = async (supabaseUser: any) => {
+      if (supabaseUser) {
+        const providerConnection = supabaseUser.app_metadata?.provider || "email";
+        const localUser: User = {
+          id: supabaseUser.id,
+          email: supabaseUser.email || "",
+          name: supabaseUser.user_metadata?.full_name || supabaseUser.email?.split("@")[0] || "Scholar User",
+          provider: providerConnection,
+          avatarUrl: supabaseUser.user_metadata?.avatar_url || getInitialAvatar(supabaseUser.email || ""),
+        };
 
-          if (!currentUser || currentUser.id !== localUser.id) {
-            setCurrentUser(localUser);
-            localStorage.setItem("apex-research-user", JSON.stringify(localUser));
-            setShowAuth(false);
-            setAuthMessage("");
+        if (!currentUser || currentUser.id !== localUser.id) {
+          setCurrentUser(localUser);
+          localStorage.setItem("apex-research-user", JSON.stringify(localUser));
+          setShowAuth(false);
+          setAuthMessage("");
 
-            if (pendingPaper) {
-              setActivePaper(pendingPaper);
-              const filtered = history.filter(id => id !== pendingPaper.id);
-              const nextHistory = [pendingPaper.id, ...filtered];
-              setHistory(nextHistory);
-              localStorage.setItem("apex-research-history", JSON.stringify(nextHistory));
-              syncUserLibraryWithBackend(localUser.id, undefined, undefined, nextHistory);
-              incrementPaperStat(pendingPaper.id, "read");
-              setPendingPaper(null);
-            }
+          if (pendingPaper) {
+            setActivePaper(pendingPaper);
+            const filtered = history.filter(id => id !== pendingPaper.id);
+            const nextHistory = [pendingPaper.id, ...filtered];
+            setHistory(nextHistory);
+            localStorage.setItem("apex-research-history", JSON.stringify(nextHistory));
+            syncUserLibraryWithBackend(localUser.id, undefined, undefined, nextHistory);
+            incrementPaperStat(pendingPaper.id, "read");
+            setPendingPaper(null);
+          }
 
-            // Sync user details to 'profiles' table if it exists
+          // Sync user details to 'profiles' table if it exists
+          if (isSupabaseActive) {
             await syncSupabaseProfile(localUser);
+          }
 
-            // Load saved user library (bookmarks, history, downloads, notes) from Supabase OR Express fallback
-            const supabaseData = await fetchSupabaseLibraryData(localUser.id);
-            if (supabaseData) {
-              if (supabaseData.bookmarks) {
-                setBookmarks(supabaseData.bookmarks);
-                localStorage.setItem("apex-research-bookmarks", JSON.stringify(supabaseData.bookmarks));
-              }
-              if (supabaseData.downloads) {
-                setDownloads(supabaseData.downloads);
-                localStorage.setItem("apex-research-downloads", JSON.stringify(supabaseData.downloads));
-              }
-              if (supabaseData.history) {
-                setHistory(supabaseData.history);
-                localStorage.setItem("apex-research-history", JSON.stringify(supabaseData.history));
-              }
-              if (supabaseData.notes) {
-                setNotes(supabaseData.notes);
-                localStorage.setItem("apex-research-notes", JSON.stringify(supabaseData.notes));
-              }
-            } else {
-              // Full-stack local Express fallback
-              fetch(`/api/users/${localUser.id}/data`)
-                .then(async res => {
-                  if (res.ok) return res.json();
-                  if (res.status === 404) {
-                    const loginRes = await fetch("/api/auth/login", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        email: localUser.email,
-                        name: localUser.name,
-                        provider: localUser.provider,
-                        avatarUrl: localUser.avatarUrl
-                      })
-                    });
-                    if (loginRes.ok) return loginRes.json();
-                  }
-                  throw new Error("Backend sync issue");
-                })
-                .then(data => {
-                  if (data) {
-                    if (data.bookmarks) setBookmarks(data.bookmarks);
-                    if (data.downloads) setDownloads(data.downloads);
-                    if (data.history) setHistory(data.history);
-                    if (data.notes) setNotes(data.notes);
-                  }
-                })
-                .catch(err => {
-                  console.warn("Express backend fallback fetch completed:", err);
-                });
+          // Load saved user library (bookmarks, history, downloads, notes)
+          const supabaseData = isSupabaseActive ? await fetchSupabaseLibraryData(localUser.id) : null;
+          if (supabaseData) {
+            if (supabaseData.bookmarks) {
+              setBookmarks(supabaseData.bookmarks);
+              localStorage.setItem("apex-research-bookmarks", JSON.stringify(supabaseData.bookmarks));
             }
-          }
-        } else {
-          // Explicit Sign Out/Clear state - Only clear if not a persistent sandbox user
-          const savedUserStr = localStorage.getItem("apex-research-user");
-          const parsedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
-          const isLocalSandboxUser = parsedUser?.id?.startsWith("usr-") || parsedUser?.provider === "email-sandbox";
-          
-          if (currentUser && !isLocalSandboxUser) {
-            setCurrentUser(null);
-            localStorage.removeItem("apex-research-user");
-            setBookmarks([]);
-            setDownloads([]);
-            setHistory([]);
-            setNotes([]);
+            if (supabaseData.downloads) {
+              setDownloads(supabaseData.downloads);
+              localStorage.setItem("apex-research-downloads", JSON.stringify(supabaseData.downloads));
+            }
+            if (supabaseData.history) {
+              setHistory(supabaseData.history);
+              localStorage.setItem("apex-research-history", JSON.stringify(supabaseData.history));
+            }
+            if (supabaseData.notes) {
+              setNotes(supabaseData.notes);
+              localStorage.setItem("apex-research-notes", JSON.stringify(supabaseData.notes));
+            }
+          } else {
+            // Full-stack local Express fallback
+            fetch(`/api/users/${localUser.id}/data`)
+              .then(async res => {
+                if (res.ok) return res.json();
+                if (res.status === 404) {
+                  const loginRes = await fetch("/api/auth/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      email: localUser.email,
+                      name: localUser.name,
+                      provider: localUser.provider,
+                      avatarUrl: localUser.avatarUrl
+                    })
+                  });
+                  if (loginRes.ok) return loginRes.json();
+                }
+                throw new Error("Backend sync issue");
+              })
+              .then(data => {
+                if (data) {
+                  if (data.bookmarks) setBookmarks(data.bookmarks);
+                  if (data.downloads) setDownloads(data.downloads);
+                  if (data.history) setHistory(data.history);
+                  if (data.notes) setNotes(data.notes);
+                }
+              })
+              .catch(err => {
+                console.warn("Express backend fallback fetch completed:", err);
+              });
           }
         }
-      };
-
-      // Query session on initial start
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        syncUser(session?.user || null);
-      }).catch(err => {
-        console.warn("Failed to retrieve initial Supabase session, continuing with local Express fallback:", err);
-        syncUser(null);
-      });
-
-      // Subscribe to auth state changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-        if (event === "PASSWORD_RECOVERY") {
-          setShowResetPasswordModal(true);
+      } else {
+        // Explicit Sign Out/Clear state
+        const savedUserStr = localStorage.getItem("apex-research-user");
+        const parsedUser = savedUserStr ? JSON.parse(savedUserStr) : null;
+        const isLocalSandboxUser = parsedUser?.id?.startsWith("usr-") || parsedUser?.provider === "email-sandbox";
+        
+        if (currentUser && !isLocalSandboxUser) {
+          setCurrentUser(null);
+          localStorage.removeItem("apex-research-user");
+          setBookmarks([]);
+          setDownloads([]);
+          setHistory([]);
+          setNotes([]);
         }
-        syncUser(session?.user || null);
-      });
+      }
+    };
 
-      return () => {
-        subscription.unsubscribe();
-      };
-    }
-  }, [pendingPaper, isSupabaseActive]);
+    // 2. RUN THE AUTH LISTENERS UNCONDITIONALLY ON MOUNT
+    // This allows Supabase to intercept hash parameters (#access_token=...) right away
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      syncUser(session?.user || null);
+    }).catch(err => {
+      console.warn("Failed to retrieve initial Supabase session, continuing with local Express fallback:", err);
+      syncUser(null);
+    });
 
+    // Subscribe to auth state changes unconditionally
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setShowResetPasswordModal(true);
+      }
+      syncUser(session?.user || null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [pendingPaper, isSupabaseActive]); // Dependencies remain intact
   // Supabase Sync Dashboard state
   const [showSupabaseDashboard, setShowSupabaseDashboard] = useState(false);
   const [showHelpGuide, setShowHelpGuide] = useState(false);
