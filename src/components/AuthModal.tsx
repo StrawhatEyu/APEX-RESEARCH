@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from "motion/react";
 import { supabase, isSupabaseActive, getAuthMode, setAuthMode, hasSupabaseConfigured } from "../lib/supabase-service";
 import { X, Sparkles, ShieldCheck, ArrowRight, Mail, Lock, RefreshCw, ArrowLeft, KeyRound } from "lucide-react";
 
+// Import the logo asset properly so Vite can bundle it during production builds
+import apexLogo from "../assets/images/apex_logo_4k_bright_1783107552408.jpg";
+
 interface AuthModalProps {
   onClose: () => void;
   onSuccess: (user: User) => void;
@@ -302,7 +305,7 @@ export default function AuthModal({ onClose, onSuccess, initialTab = "signin", m
         <div className="text-center mb-6 relative z-10" id="auth-branding">
           <div className="w-14 h-14 mx-auto rounded-2xl overflow-hidden relative border border-blue-500/30 mb-3 shadow-lg shadow-indigo-500/10 flex items-center justify-center bg-slate-950 shrink-0">
             <img 
-              src="/src/assets/images/apex_logo_4k_bright_1783107552408.jpg" 
+              src={apexLogo} 
               alt="APEX Logo" 
               className="w-full h-full object-cover object-top"
               referrerPolicy="no-referrer"
@@ -684,13 +687,6 @@ export default function AuthModal({ onClose, onSuccess, initialTab = "signin", m
                       </div>
                     </motion.div>
                   )}
-                </div>
-
-                {/* Secure Active Handshake indicator */}
-                <div className="pt-2 text-center">
-                  <span className="text-[9.5px] font-mono tracking-wider text-cyan-500/80 uppercase">
-                    🔒 encrypted military-grade session gateway
-                  </span>
                 </div>
               </motion.div>
             )}
